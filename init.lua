@@ -1388,7 +1388,7 @@ local function _request(args)
 	end
 	game:GetService("HttpService"):RequestInternal(args):Start(callback)
 	while not Body and Timeout < 10 do
-		task.wait()
+		task.wait(.00000001)
 		Timeout = Timeout + .1
 	end
 	return Body
@@ -1406,7 +1406,7 @@ local function execute(bytecode, env)
 		local success, errorMessage = pcall(toret)
 		if errorMessage ~= nil then
 			-- would be mad sick to make this red, but it doesn't really matter
-			warn(errorMessage)
+			print(errorMessage)
 		end
 	end
 end
@@ -1994,7 +1994,7 @@ local function register_functions(environment, isrenv)
 	local TARGET_FRAME_RATE = 0
 	local frameStart = os.clock()
 
-	environment.getexecutorname = function() return "Re-Write v3.5.0" end
+	environment.getexecutorname = function() return "rewrite v1.0.0" end
 	environment.identifyexecutor = environment.getexecutorname
 	environment.getthreadcontext = function() return 3 end
 	environment.getthreadidentity = environment.getthreadcontext
@@ -2610,6 +2610,7 @@ local function register_functions(environment, isrenv)
 		local upval1 = ClickDetector.Parent
 		local part = Instance.new("Part")
 		part.Transparency = 1
+		part.Size = Vector3.new(30, 30, 30)
 		part.Anchored = true
 		part.CanCollide = false
 		part.Parent = workspace
@@ -2780,7 +2781,7 @@ local function register_functions(environment, isrenv)
 		if typeof(script) == "Instance" then
 			isValidType = script:IsA("Script") or script:IsA("LocalScript") or script:IsA("LuaSourceContainer")
 		end
-		assert(isValidType, "Expected Script, LocalScript, or LuaSourceContainer")
+		assert(isValidType, "Expected a Script, LocalScript, or LuaSourceContainer")
 		return script:GetHash()
 	end	
 
@@ -3045,55 +3046,39 @@ local function register_functions(environment, isrenv)
 
 	environment.crypt = {}
 
-    environment.crypt.base64encode = function(data)
-        local b64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-        
-        local binary = data:gsub('.', function(x)
-            local byte = x:byte()
-            local bits = ''
-            for i = 8, 1, -1 do 
-                bits = bits .. (byte % 2^i - byte % 2^(i-1) > 0 and '1' or '0')
-            end
-            return bits
-        end)
-
-        binary = binary .. '0000'
-        local encoded = binary:gsub('%d%d%d?%d?%d?%d?', function(x)
-            if #x < 6 then return '' end
-            local c = 0
-            for i = 1, 6 do
-                c = c + (x:sub(i,i) == '1' and 2^(6-i) or 0)
-            end
-            return b64chars:sub(c + 1, c + 1)
-        end)
-
-        return encoded .. ({ '', '==', '=' })[#data % 3 + 1]
-    end
-
-    environment.crypt.base64decode = function(data)
-        local b64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-        
-        data = string.gsub(data, '[^'..b64chars..'=]', '')
-
-        local decoded = data:gsub('.', function(x)
-            if x == '=' then return '' end
-            local bits = ''
-            local index = b64chars:find(x) - 1
-            for i = 6, 1, -1 do
-                bits = bits .. (index % 2^i - index % 2^(i-1) > 0 and '1' or '0')
-            end
-            return bits
-        end)
-
-        return decoded:gsub('%d%d%d?%d?%d?%d?%d?%d?', function(x)
-            if #x ~= 8 then return '' end
-            local c = 0
-            for i = 1, 8 do
-                c = c + (x:sub(i,i) == '1' and 2^(8-i) or 0)
-            end
-            return string.char(c)
-        end)
-    end
+	environment.crypt.base64encode = function(data)
+		local letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+		return ((data:gsub('.', function(x) 
+			local r, b = '', x:byte()
+			for i = 8, 1, -1 do r = r .. (b % 2^i - b % 2^(i-1) > 0 and '1' or '0') end
+			return r
+		end) .. '0000'):gsub('%d%d%d?%d?%d?%d?', function(x)
+			if (#x < 6) then return '' end
+			local c = 0
+			for i = 1, 6 do c = c + (x:sub(i, i) == '1' and 2^(6-i) or 0) end
+			return letters:sub(c + 1, c + 1)
+		end) .. ({ '', '==', '=' })[#data % 3 + 1])
+	end
+	
+	environment.crypt.base64decode = function(data)
+		local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+		data = string.gsub(data, '[^'..b..'=]', '')
+		return (data:gsub('.', function(x)
+			if x == '=' then return '' end
+			local r, f = '', (b:find(x) - 1)
+			for i = 6, 1, -1 do
+				r = r .. (f % 2^i - f % 2^(i - 1) > 0 and '1' or '0')
+			end
+			return r
+		end):gsub('%d%d%d?%d?%d?%d?%d?%d?', function(x)
+			if #x ~= 8 then return '' end
+			local c = 0
+			for i = 1, 8 do
+				c = c + (x:sub(i, i) == '1' and 2^(8 - i) or 0)
+			end
+			return string.char(c)
+		end))
+	end
 
 	environment.crypt.base64 = {}
 	environment.crypt.base64.encode = environment.crypt.base64encode
@@ -3127,7 +3112,7 @@ local function register_functions(environment, isrenv)
 				end
 				if buffer.readu8(buff, 1) == 0 then
 					table.remove(byteArray, 1)
-					print("Error Caught:", string.char(table.unpack(byteArray)))
+					print("Catched Error:", string.char(table.unpack(byteArray)))
 				end
 				execute(buff, environment)()
 			end)
@@ -3144,7 +3129,7 @@ local function register_functions(environment, isrenv)
 			end
 			if buffer.readu8(buff, 1) == 0 then
 				table.remove(byteArray, 1)
-				print("Error Caught:", string.char(table.unpack(byteArray)))
+				print("Catched Error:", string.char(table.unpack(byteArray)))
 			end
 			execute(buff, environment)()
 		end
@@ -3196,7 +3181,7 @@ local function register_functions(environment, isrenv)
 
 	environment.crypt.hash = environment.getscripthash
 
-	print("Functions registered.")
+	print("Registered functions.")
 end
 
 local function interpolate_cenvironments(env1, env2)
@@ -3211,14 +3196,15 @@ local function interpolate_environments(env1, env2)
 	end
 end
 
-print("Initializing environment...")
+print("Creating environment...")
 local renv, genv = create_environment()
-
-print("Configuring security settings...")
 register_functions(renv, true)
 register_functions(genv, false)
-interpolate_cenvironments(renv, genv)
+print("Registering functions...")
+
+interpolate_cenvironments(renv, genv) -- replicate functions from exec env to renv [for use from executor side only] -> don't need to worry about sandboxing
 interpolate_environments(getfenv, genv)
+print("Sandboxed environments.")
 
 genv.isexecutorclosure = function() return true end
 renv.isexecutorclosure = function() return false end
@@ -3227,38 +3213,38 @@ getfenv().isexecutorclosure = renv.isexecutorclosure
 genv.isourclosure = genv.isexecutorclosure
 renv.isourclosure = renv.isexecutorclosure
 getfenv().isourclosure = renv.isourclosure
+
 genv.checkclosure = genv.isourclosure
 renv.checkclosure = renv.isourclosure
 getfenv().checkclosure = renv.isourclosure
 
-print("Environment setup complete.")
-
 local function Thread()
     while true do
-        task.wait()
-        local response = _request({
-            Method = "GET",
-            Url = "http://localhost:7331/loadstring",
-        })
-        pcall(function()
-            if response ~= "" then
-                local _script = response.Body
-                _script = _script:gsub("game:HttpGet", "getgenv().HttpGet")
-                local byteArray = convertToBytes(_script)
-                local buff = buffer.create(#byteArray+1)
-                for i, byte in ipairs(byteArray) do
-                    buffer.writeu8(buff, i-1, byte)
-                end
-                if buffer.readu8(buff, 1) == 0 then
-                    table.remove(byteArray, 1)
-                    print("Error Caught:", string.char(table.unpack(byteArray)))
-                end
-                execute(buff, genv)()
-            end
+        task.wait()	
+		local response = _request({
+			Method = "GET",
+			Url = "http://localhost:7331/loadstring",
+		})
+
+        pcall(function() if response ~= "" then
+        local _script = response.Body
+        _script = _script:gsub("game:HttpGet", "getgenv().HttpGet")
+        local byteArray = convertToBytes(_script)
+		local buff = buffer.create(#byteArray+1)
+		for i, byte in ipairs(byteArray) do
+			buffer.writeu8(buff, i-1, byte)
+		end
+		if buffer.readu8(buff, 1) == 0 then
+			table.remove(byteArray, 1)
+			print("Catched Error:", string.char(table.unpack(byteArray)))
+		end
+		execute(buff, genv)()
+    end
         end)
     end
 end
 
+print("Spawned thread.")
 task.spawn(Thread)
 
 local initialized = false
@@ -3267,24 +3253,21 @@ local initializedEvent = Instance.new("BindableEvent")
 local PolicyService = table.create(0)
 
 function PolicyService:InitAsync()
-    if initialized then return end
-
-    local plrs = game:GetService('Players')
-    local localPlayer = plrs.LocalPlayer
-
-    while not localPlayer do
-        plrs.PlayerAdded:Wait()
-        localPlayer = plrs.LocalPlayer
-    end
-
-    initialized = true
-    initializedEvent:Fire()
+if initialized then return end
+local plrs = game:GetService('Players')
+local localPlayer = plrs.LocalPlayer
+while not localPlayer do
+    plrs.PlayerAdded:Wait()
+    localPlayer = plrs.LocalPlayer
+end
+initialized = true
+initializedEvent:Fire()
 end
 
 function PolicyService:IsSubjectToChinaPolicies()
-    --self:InitAsync()
+--self:InitAsync()
 
-    return false
+return false
 end
 
 return PolicyService
