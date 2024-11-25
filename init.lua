@@ -1295,7 +1295,7 @@ local RunBytecode = coroutine.wrap(function()
 
 					if proto.lineinfoenabled then
 					else 
-						return warn(string_format("rewrite>lvm error [name>%s>opcode %s]>%s", proto.debugname, debugging.pc, debugging.name, message), 0)
+						return warn(string_format("nexar>lvm error [name>%s>opcode %s]>%s", proto.debugname, debugging.pc, debugging.name, message), 0)
 					end
 				end
 			end
@@ -1994,7 +1994,7 @@ local function register_functions(environment, isrenv)
 	local TARGET_FRAME_RATE = 0
 	local frameStart = os.clock()
 
-	environment.getexecutorname = function() return "rewrite v1.0.0" end
+	environment.getexecutorname = function() return "Nexar v1.0.0" end
 	environment.identifyexecutor = environment.getexecutorname
 	environment.getthreadcontext = function() return 3 end
 	environment.getthreadidentity = environment.getthreadcontext
@@ -2698,21 +2698,21 @@ local function register_functions(environment, isrenv)
 		return wasScriptable
 	end
 
-	environment.rewrite = {
+	environment.nexar = {
 		Saved_Metatable = {},
 		ReadOnly = {},
 		OriginalTables = {},
 		Luau_setmetatable = setmetatable
 	}
 	environment.isreadonly = function(tbl)
-		return environment.rewrite.ReadOnly[tbl] or table.isfrozen(tbl) or false
+		return environment.nexar.ReadOnly[tbl] or table.isfrozen(tbl) or false
 	end
 	environment.setreadonly = function(tbl, readOnly)
 		if readOnly then
-			environment.rewrite.ReadOnly[tbl] = true
+			environment.nexar.ReadOnly[tbl] = true
 			local clone = table.clone(tbl)
-			environment.rewrite.OriginalTables[clone] = tbl
-			return environment.rewrite.Luau_setmetatable(clone, {
+			environment.nexar.OriginalTables[clone] = tbl
+			return environment.nexar.Luau_setmetatable(clone, {
 				__index = tbl,
 				__newindex = function(_, key, value)
 					print("attempt to modify a readonly table")
